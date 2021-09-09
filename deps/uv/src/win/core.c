@@ -604,20 +604,33 @@ int uv_run(uv_loop_t *loop, uv_run_mode mode) {
 
   while (r != 0 && loop->stop_flag == 0) {
     uv_update_time(loop);
+    printf("Timer Phase[uv__run_timers] Enter\n");
     uv__run_timers(loop);
-
+    printf("Timer Phase[uv__run_timers] Exit\n");
+    printf("Pending Callbacks Phase[uv_process_reqs] Enter\n");
     ran_pending = uv_process_reqs(loop);
+    printf("Pending Callbacks Phase[uv_process_reqs] Exit\n");
+    printf("Idle Phase[uv_idle_invoke] Enter\n");
     uv_idle_invoke(loop);
+    printf("Idle Phase[uv_idle_invoke] Exit\n");
+    printf("Prepare Phase[uv_prepare_invoke] Enter\n");
     uv_prepare_invoke(loop);
+    printf("Prepare Phase[uv_prepare_invoke] Exit\n");
 
     timeout = 0;
     if ((mode == UV_RUN_ONCE && !ran_pending) || mode == UV_RUN_DEFAULT)
       timeout = uv_backend_timeout(loop);
 
-    if (pGetQueuedCompletionStatusEx)
+    if (pGetQueuedCompletionStatusEx){
+
+      printf("Poll Phase[uv__poll] Enter\n");
       uv__poll(loop, timeout);
-    else
+      printf("Poll Phase[uv__poll] Exit\n");
+    }else{
+      printf("Poll Phase[uv__poll_wine] Enter\n");
       uv__poll_wine(loop, timeout);
+      printf("Poll Phase[uv__poll_wine] Exit\n");
+    }
 
     /* Run one final update on the provider_idle_time in case uv__poll*
      * returned because the timeout expired, but no events were received. This
@@ -626,8 +639,12 @@ int uv_run(uv_loop_t *loop, uv_run_mode mode) {
      */
     uv__metrics_update_idle_time(loop);
 
+    printf("Check Phase[uv_check_invoke] Enter\n");
     uv_check_invoke(loop);
+    printf("Check Phase[uv_check_invoke] Exit\n");
+    printf("Close Callbacks Phase[uv_process_endgames] Enter\n");
     uv_process_endgames(loop);
+    printf("Close Callbacks Phase[uv_process_endgames] Exit\n");
 
     if (mode == UV_RUN_ONCE) {
       /* UV_RUN_ONCE implies forward progress: at least one callback must have

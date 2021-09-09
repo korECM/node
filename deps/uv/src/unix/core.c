@@ -376,17 +376,28 @@ int uv_run(uv_loop_t* loop, uv_run_mode mode) {
     uv__update_time(loop);
 
   while (r != 0 && loop->stop_flag == 0) {
+    printf("EVENT LOOP REPEAT\n");
     uv__update_time(loop);
+    printf("Timer Phase[uv__run_timers] Enter\n");
     uv__run_timers(loop);
+    printf("Timer Phase[uv__run_timers] Exit\n");
+    printf("Pending Callbacks Phase[uv__run_pending] Enter\n");
     ran_pending = uv__run_pending(loop);
+    printf("Pending Callbacks Phase[uv__run_pending] Exit\n");
+//    printf("Idle Phase[uv__run_idle] Enter\n");
     uv__run_idle(loop);
+//    printf("Idle Phase[uv__run_idle] Exit\n");
+//    printf("Prepare Phase[uv__run_prepare] Enter\n");
     uv__run_prepare(loop);
+//    printf("Prepare Phase[uv__run_prepare] Exit\n");
 
     timeout = 0;
     if ((mode == UV_RUN_ONCE && !ran_pending) || mode == UV_RUN_DEFAULT)
       timeout = uv_backend_timeout(loop);
 
+    printf("Poll Phase[uv__io_pole] Enter\n");
     uv__io_poll(loop, timeout);
+    printf("Poll Phase[uv__io_pole] Exit\n");
 
     /* Run one final update on the provider_idle_time in case uv__io_poll
      * returned because the timeout expired, but no events were received. This
@@ -395,8 +406,12 @@ int uv_run(uv_loop_t* loop, uv_run_mode mode) {
      */
     uv__metrics_update_idle_time(loop);
 
+    printf("Check Phase[uv__run_check] Enter\n");
     uv__run_check(loop);
+    printf("Check Phase[uv__run_check] Exit\n");
+    printf("Close Callbacks Phase[uv__run_closing_handles] Enter\n");
     uv__run_closing_handles(loop);
+    printf("Close Callbacks Phase[uv__run_closing_handles] Exit\n");
 
     if (mode == UV_RUN_ONCE) {
       /* UV_RUN_ONCE implies forward progress: at least one callback must have
@@ -408,7 +423,10 @@ int uv_run(uv_loop_t* loop, uv_run_mode mode) {
        * the check.
        */
       uv__update_time(loop);
+      printf("UV_RUN_ONCE\n");
+      printf("Timer Phase[uv__run_timers] Enter\n");
       uv__run_timers(loop);
+      printf("Timer Phase[uv__run_timers] Exit\n");
     }
 
     r = uv__loop_alive(loop);

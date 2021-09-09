@@ -134,6 +134,7 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
 
   if (loop->nfds == 0) {
     assert(QUEUE_EMPTY(&loop->watcher_queue));
+    printf("  QUEUE EMPTY\n");
     return;
   }
 
@@ -143,6 +144,8 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
     q = QUEUE_HEAD(&loop->watcher_queue);
     QUEUE_REMOVE(q);
     QUEUE_INIT(q);
+
+    printf("  POP DATA FROM QUEUE\n");
 
     w = QUEUE_DATA(q, uv__io_t, watcher_queue);
     assert(w->pevents != 0);
@@ -307,7 +310,11 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
         assert(w->events == POLLIN);
         assert(w->pevents == POLLIN);
         uv__metrics_update_idle_time(loop);
+        printf("  RUN POLL CALLBACK START\n");
+        printf("====================\n");
         w->cb(loop, w, ev->fflags); /* XXX always uv__fs_event() */
+        printf("====================\n");
+        printf("  RUN POLL CALLBACK END\n");
         nevents++;
         continue;
       }
@@ -372,7 +379,11 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
         have_signals = 1;
       } else {
         uv__metrics_update_idle_time(loop);
+        printf("  RUN POLL CALLBACK START\n");
+        printf("====================\n");
         w->cb(loop, w, revents);
+        printf("====================\n");
+        printf("  RUN POLL CALLBACK END\n");
       }
 
       nevents++;

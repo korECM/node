@@ -166,16 +166,24 @@ void uv__run_timers(uv_loop_t* loop) {
 
   for (;;) {
     heap_node = heap_min(timer_heap(loop));
-    if (heap_node == NULL)
+    if (heap_node == NULL){
+      printf("  NO TIMER LEFT\n");
       break;
-
+    }
+    printf("  FIND TIMER\n");
     handle = container_of(heap_node, uv_timer_t, heap_node);
-    if (handle->timeout > loop->time)
+    if (handle->timeout > loop->time){
+      printf("  TOO EARLY TO EXECUTE TIMER CALLBACK %llu > %llu \n", handle->timeout, loop->time);
       break;
+    }
 
     uv_timer_stop(handle);
     uv_timer_again(handle);
+    printf("  RUN TIMER CALLBACK START \n");
+    printf("====================\n");
     handle->timer_cb(handle);
+    printf("====================\n");
+    printf("  RUN TIMER CALLBACK END \n");
   }
 }
 
