@@ -603,6 +603,7 @@ int uv_run(uv_loop_t *loop, uv_run_mode mode) {
     uv_update_time(loop);
 
   while (r != 0 && loop->stop_flag == 0) {
+    printf("EVENT LOOP REPEAT\n");
     uv_update_time(loop);
     printf("Timer Phase[uv__run_timers] Enter\n");
     uv__run_timers(loop);
