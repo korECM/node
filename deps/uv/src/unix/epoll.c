@@ -227,21 +227,25 @@ void  uv__io_poll(uv_loop_t* loop, int timeout) {
 
     if (no_epoll_wait != 0 || (sigmask != 0 && no_epoll_pwait == 0)) {
       // timeout 동안 Block I/O
+      printf("  POLL FOR %d Start\n", timeout);
       nfds = epoll_pwait(loop->backend_fd,
                          events,
                          ARRAY_SIZE(events),
                          timeout,
                          &sigset);
+      printf("  POLL FOR End. polling result : %d\n", nfds);
       if (nfds == -1 && errno == ENOSYS) { // epoll_pwait은 에러가 발생하면 -1을 리턴한다. 만약 그 에러가 ENOSYS인 경우
         uv__store_relaxed(&no_epoll_pwait_cached, 1);
         no_epoll_pwait = 1;
       }
     } else {
       // timeout 동안 Block I/O
+      printf("  POLL FOR %d Start\n", timeout);
       nfds = epoll_wait(loop->backend_fd,
                         events,
                         ARRAY_SIZE(events),
                         timeout);
+      printf("  POLL FOR End. polling result : %d\n", nfds);
       if (nfds == -1 && errno == ENOSYS) { // epoll_pwait은 에러가 발생하면 -1을 리턴한다. 만약 그 에러가 ENOSYS인 경우
         uv__store_relaxed(&no_epoll_wait_cached, 1);
         no_epoll_wait = 1;
@@ -260,17 +264,22 @@ void  uv__io_poll(uv_loop_t* loop, int timeout) {
 
     if (nfds == 0) { // 타임아웃 시간동안 FD가 준비되지 않은 경우
       assert(timeout != -1);
+      printf("  There is no completed I/O Request\n");
 
       if (reset_timeout != 0) {
         timeout = user_timeout;
         reset_timeout = 0;
       }
 
-      if (timeout == -1)
+      if (timeout == -1){
+        printf("  Timeout is -1, so wait for the I/O request again\n");
         continue;
+      }
 
-      if (timeout == 0) // 완료된 I/O 요청이 없고 timeout이 0이라면 바로 다음 페이즈로 넘어간다
+      if (timeout == 0){ // 완료된 I/O 요청이 없고 timeout이 0이라면 바로 다음 페이즈로 넘어간다
+        printf("  End Poll Phase because there is no completed I/O request and timeout is 0\n")
         return;
+      }
 
       /* We may have been inside the system call for longer than |timeout|
        * milliseconds so we need to update the timestamp to avoid drift.
@@ -279,6 +288,7 @@ void  uv__io_poll(uv_loop_t* loop, int timeout) {
     }
 
     if (nfds == -1) { // epoll_wait()에서 에러가 발생한 경우
+      printf("  An error occurred while waiting for the I/O request.\n");
       if (errno == ENOSYS) {
         /* epoll_wait() or epoll_pwait() failed, try the other system call. */
         assert(no_epoll_wait == 0 || no_epoll_pwait == 0);
@@ -293,11 +303,15 @@ void  uv__io_poll(uv_loop_t* loop, int timeout) {
         reset_timeout = 0;
       }
 
-      if (timeout == -1)
+      if (timeout == -1){
+        printf("  Timeout is -1, so wait for the I/O request again\n");
         continue;
+      }
 
-      if (timeout == 0) // poll 과정에서 에러가 발생했고 timeout이 0이라면 바로 다음 페이즈로 넘어간다
+      if (timeout == 0) { // poll 과정에서 에러가 발생했고 timeout이 0이라면 바로 다음 페이즈로 넘어간다
+        printf("  End Poll Phase because an error occurred while waiting for the I/O request, and the timeout is 0\n")
         return;
+      }
 
       /* Interrupted by a signal. Update timeout and poll again. */
       goto update_timeout;
@@ -412,11 +426,15 @@ void  uv__io_poll(uv_loop_t* loop, int timeout) {
       return;
     }
 
-    if (timeout == 0) // 완료된 I/O 요청에 대한 콜백을 처리했고 timeout이 0이라면 더이상 I/O 이벤트를 기다리지 않고 바로 다음 페이즈로 넘어간다
+    if (timeout == 0){ // 완료된 I/O 요청에 대한 콜백을 처리했고 timeout이 0이라면 더이상 I/O 이벤트를 기다리지 않고 바로 다음 페이즈로 넘어간다
+      printf("  End Poll Phase because the callback execution for the completed I/O request has ended, and the timeout is 0\n")
       return;
+    }
 
-    if (timeout == -1) // 완료된 I/O 요청에 대한 콜백을 처리했고 timeout이 -1이라면 다시 I/O 이벤트를 최대 30분까지 기다린다
+    if (timeout == -1) { // 완료된 I/O 요청에 대한 콜백을 처리했고 timeout이 -1이라면 다시 I/O 이벤트를 최대 30분까지 기다린다
+      printf("  the callback execution for the completed I/O request has ended, and the timeout is -1, so wait for the I/O request again\n");
       continue;
+    }
 
 update_timeout:
     assert(timeout > 0);
@@ -425,6 +443,7 @@ update_timeout:
     if (real_timeout <= 0)
       return;
 
+    printf("Update Timeout %d -> %d\n", timeout, real_timeout)
     timeout = real_timeout;
   }
 }
