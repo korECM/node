@@ -395,7 +395,7 @@ int uv_run(uv_loop_t* loop, uv_run_mode mode) {
     if ((mode == UV_RUN_ONCE && !ran_pending) || mode == UV_RUN_DEFAULT) // mode가 UV_RUN_ONCE면서 pending phase에서 콜백을 실행하지 않았거나 mode가 UV_RUN_DEFAULT인 경우
       timeout = uv_backend_timeout(loop);
 
-    printf("calculated Poll Phase timeout = %d\n", timeout);
+    printf("Calculated Poll Phase timeout = %d\n", timeout);
 
     printf("Poll Phase[uv__io_pole] Enter\n");
     uv__io_poll(loop, timeout);
