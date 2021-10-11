@@ -230,13 +230,14 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
     if (pset != NULL)
       pthread_sigmask(SIG_BLOCK, pset, NULL);
 
+    printf("  POLL FOR timeout %d Start\n", timeout);
     nfds = kevent(loop->backend_fd,
                   events,
                   nevents,
                   events,
                   ARRAY_SIZE(events),
                   timeout == -1 ? NULL : &spec);
-
+    printf("  POLL FOR End. polling result : %d\n", nfds);
     if (pset != NULL)
       pthread_sigmask(SIG_UNBLOCK, pset, NULL);
 
@@ -247,11 +248,14 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
     SAVE_ERRNO(uv__update_time(loop));
 
     if (nfds == 0) {
+      printf("  There is no completed I/O Request\n");
       if (reset_timeout != 0) {
         timeout = user_timeout;
         reset_timeout = 0;
-        if (timeout == -1)
+        if (timeout == -1){
+          printf("  Timeout is -1, so wait for the I/O request again\n");
           continue;
+        }
         if (timeout > 0)
           goto update_timeout;
       }
@@ -261,6 +265,7 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
     }
 
     if (nfds == -1) {
+      printf("  An error occurred while waiting for the I/O request.\n");
       if (errno != EINTR)
         abort();
 
@@ -269,11 +274,15 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
         reset_timeout = 0;
       }
 
-      if (timeout == 0)
+      if (timeout == 0){
+        printf("  End Poll Phase because an error occurred while waiting for the I/O request, and the timeout is 0\n");
         return;
+      }
 
-      if (timeout == -1)
+      if (timeout == -1){
+        printf("  Timeout is -1, so wait for the I/O request again\n");
         continue;
+      }
 
       /* Interrupted by a signal. Update timeout and poll again. */
       goto update_timeout;
@@ -414,11 +423,15 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
       return;
     }
 
-    if (timeout == 0)
+    if (timeout == 0){
+      printf("  End Poll Phase because the callback execution for the completed I/O request has ended, and the timeout is 0\n");
       return;
+    }
 
-    if (timeout == -1)
+    if (timeout == -1){
+      printf("  the callback execution for the completed I/O request has ended, and the timeout is -1, so wait for the I/O request again\n");
       continue;
+    }
 
 update_timeout:
     assert(timeout > 0);
@@ -426,7 +439,7 @@ update_timeout:
     diff = loop->time - base;
     if (diff >= (uint64_t) timeout)
       return;
-
+    printf("Update Timeout %d -> %llu\n", timeout, timeout - diff);
     timeout -= diff;
   }
 }

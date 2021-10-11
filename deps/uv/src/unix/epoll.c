@@ -227,7 +227,7 @@ void  uv__io_poll(uv_loop_t* loop, int timeout) {
 
     if (no_epoll_wait != 0 || (sigmask != 0 && no_epoll_pwait == 0)) {
       // timeout 동안 Block I/O
-      printf("  POLL FOR %d Start\n", timeout);
+      printf("  POLL FOR timeout %d Start\n", timeout);
       nfds = epoll_pwait(loop->backend_fd,
                          events,
                          ARRAY_SIZE(events),
@@ -240,7 +240,7 @@ void  uv__io_poll(uv_loop_t* loop, int timeout) {
       }
     } else {
       // timeout 동안 Block I/O
-      printf("  POLL FOR %d Start\n", timeout);
+      printf("  POLL FOR timeout %d Start\n", timeout);
       nfds = epoll_wait(loop->backend_fd,
                         events,
                         ARRAY_SIZE(events),
