@@ -620,7 +620,7 @@ int uv_run(uv_loop_t *loop, uv_run_mode mode) {
     timeout = 0;
     if ((mode == UV_RUN_ONCE && !ran_pending) || mode == UV_RUN_DEFAULT)
       timeout = uv_backend_timeout(loop);
-    printf("calculated Poll Phase timeout = %d\n", timeout)
+    printf("calculated Poll Phase timeout = %d\n", timeout);
     if (pGetQueuedCompletionStatusEx){
 
       printf("Poll Phase[uv__poll] Enter\n");
