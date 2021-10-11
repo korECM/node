@@ -100,7 +100,7 @@ int uv__io_check_fd(uv_loop_t* loop, int fd) {
 }
 
 
-void uv__io_poll(uv_loop_t* loop, int timeout) {
+void  uv__io_poll(uv_loop_t* loop, int timeout) {
   /* A bug in kernels < 2.6.37 makes timeouts larger than ~30 minutes
    * effectively infinite on 32 bits architectures.  To avoid blocking
    * indefinitely, we cap the timeout and poll again if necessary.
@@ -109,7 +109,7 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
    * the value of CONFIG_HZ.  The magic constant assumes CONFIG_HZ=1200,
    * that being the largest value I have seen in the wild (and only once.)
    */
-  static const int max_safe_timeout = 1789569;
+  static const int max_safe_timeout = 1789569; // 최대 30분
   static int no_epoll_pwait_cached;
   static int no_epoll_wait_cached;
   int no_epoll_pwait;
@@ -226,21 +226,23 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
         abort();
 
     if (no_epoll_wait != 0 || (sigmask != 0 && no_epoll_pwait == 0)) {
+      // timeout 동안 Block I/O
       nfds = epoll_pwait(loop->backend_fd,
                          events,
                          ARRAY_SIZE(events),
                          timeout,
                          &sigset);
-      if (nfds == -1 && errno == ENOSYS) {
+      if (nfds == -1 && errno == ENOSYS) { // epoll_pwait은 에러가 발생하면 -1을 리턴한다. 만약 그 에러가 ENOSYS인 경우
         uv__store_relaxed(&no_epoll_pwait_cached, 1);
         no_epoll_pwait = 1;
       }
     } else {
+      // timeout 동안 Block I/O
       nfds = epoll_wait(loop->backend_fd,
                         events,
                         ARRAY_SIZE(events),
                         timeout);
-      if (nfds == -1 && errno == ENOSYS) {
+      if (nfds == -1 && errno == ENOSYS) { // epoll_pwait은 에러가 발생하면 -1을 리턴한다. 만약 그 에러가 ENOSYS인 경우
         uv__store_relaxed(&no_epoll_wait_cached, 1);
         no_epoll_wait = 1;
       }
@@ -256,7 +258,7 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
      */
     SAVE_ERRNO(uv__update_time(loop));
 
-    if (nfds == 0) {
+    if (nfds == 0) { // 타임아웃 시간동안 FD가 준비되지 않은 경우
       assert(timeout != -1);
 
       if (reset_timeout != 0) {
@@ -267,7 +269,7 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
       if (timeout == -1)
         continue;
 
-      if (timeout == 0)
+      if (timeout == 0) // 완료된 I/O 요청이 없고 timeout이 0이라면 바로 다음 페이즈로 넘어간다
         return;
 
       /* We may have been inside the system call for longer than |timeout|
@@ -276,7 +278,7 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
       goto update_timeout;
     }
 
-    if (nfds == -1) {
+    if (nfds == -1) { // epoll_wait()에서 에러가 발생한 경우
       if (errno == ENOSYS) {
         /* epoll_wait() or epoll_pwait() failed, try the other system call. */
         assert(no_epoll_wait == 0 || no_epoll_pwait == 0);
@@ -294,7 +296,7 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
       if (timeout == -1)
         continue;
 
-      if (timeout == 0)
+      if (timeout == 0) // poll 과정에서 에러가 발생했고 timeout이 0이라면 바로 다음 페이즈로 넘어간다
         return;
 
       /* Interrupted by a signal. Update timeout and poll again. */
@@ -317,7 +319,7 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
       loop->watchers[loop->nwatchers + 1] = (void*) (uintptr_t) nfds;
     }
 
-    for (i = 0; i < nfds; i++) {
+    for (i = 0; i < nfds; i++) { // 성공한 FD의 수만큼 반복
       pe = events + i;
       fd = pe->data.fd;
 
@@ -410,10 +412,10 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
       return;
     }
 
-    if (timeout == 0)
+    if (timeout == 0) // 완료된 I/O 요청에 대한 콜백을 처리했고 timeout이 0이라면 더이상 I/O 이벤트를 기다리지 않고 바로 다음 페이즈로 넘어간다
       return;
 
-    if (timeout == -1)
+    if (timeout == -1) // 완료된 I/O 요청에 대한 콜백을 처리했고 timeout이 -1이라면 다시 I/O 이벤트를 최대 30분까지 기다린다
       continue;
 
 update_timeout:

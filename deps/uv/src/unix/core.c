@@ -316,7 +316,7 @@ static void uv__run_closing_handles(uv_loop_t* loop) {
   p = loop->closing_handles;
   loop->closing_handles = NULL;
 
-  while (p) {
+  while (p) { // close queue에 담긴 콜백을 실행한다
     q = p->next_closing;
     uv__finish_close(p);
     p = q;
@@ -335,22 +335,22 @@ int uv_backend_fd(const uv_loop_t* loop) {
 
 
 int uv_backend_timeout(const uv_loop_t* loop) {
-  if (loop->stop_flag != 0)
+  if (loop->stop_flag != 0) // uv_stop()이 불려 이벤트 루프를 멈춘다면 기다리지 않고 다음 페이즈로 넘어간다
     return 0;
 
-  if (!uv__has_active_handles(loop) && !uv__has_active_reqs(loop))
+  if (!uv__has_active_handles(loop) && !uv__has_active_reqs(loop)) //  당장 처리해야 하는 비동기 처리가 없고 기다리고 있는 비동기 요청도 없다면 기다리지 않고 다음 페이즈로 넘어간다
     return 0;
 
-  if (!QUEUE_EMPTY(&loop->idle_handles))
+  if (!QUEUE_EMPTY(&loop->idle_handles)) // 만약 idle_handles에 남아있는 핸들러가 있다면 기다리지 않고 다음 페이즈로 넘어간다
     return 0;
 
-  if (!QUEUE_EMPTY(&loop->pending_queue))
+  if (!QUEUE_EMPTY(&loop->pending_queue)) // 만약 pending_queue에 남아있는 핸들러가 있다면 기다리지 않고 다음 페이즈로 넘어간다
     return 0;
 
-  if (loop->closing_handles)
+  if (loop->closing_handles) // 만약 남아있는 close handlers가 있다면 기다리지 않고 다음 페이즈로 넘어간다
     return 0;
 
-  return uv__next_timeout(loop);
+  return uv__next_timeout(loop); // 타이머를 이용해 가디려야 하는 시간을 계산한다.
 }
 
 
@@ -392,7 +392,7 @@ int uv_run(uv_loop_t* loop, uv_run_mode mode) {
 //    printf("Prepare Phase[uv__run_prepare] Exit\n");
 
     timeout = 0;
-    if ((mode == UV_RUN_ONCE && !ran_pending) || mode == UV_RUN_DEFAULT)
+    if ((mode == UV_RUN_ONCE && !ran_pending) || mode == UV_RUN_DEFAULT) // mode가 UV_RUN_ONCE면서 pending phase에서 콜백을 실행하지 않았거나 mode가 UV_RUN_DEFAULT인 경우
       timeout = uv_backend_timeout(loop);
 
     printf("Poll Phase[uv__io_pole] Enter\n");

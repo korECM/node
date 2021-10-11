@@ -144,15 +144,15 @@ int uv__next_timeout(const uv_loop_t* loop) {
   const uv_timer_t* handle;
   uint64_t diff;
 
-  heap_node = heap_min(timer_heap(loop));
-  if (heap_node == NULL)
+  heap_node = heap_min(timer_heap(loop)); // Timer Phase의 Heap에서 가장 실행 시간이 빠른 node를 가져온다
+  if (heap_node == NULL) // 기다리고 있는 타이머가 없으므로 무한정 기다린다
     return -1; /* block indefinitely */
 
   handle = container_of(heap_node, uv_timer_t, heap_node);
-  if (handle->timeout <= loop->time)
+  if (handle->timeout <= loop->time) // 지금 당장 타이머를 실행할 수 있는 상태라면 0을 반환
     return 0;
 
-  diff = handle->timeout - loop->time;
+  diff = handle->timeout - loop->time; // 가장 실행 시간이 빠른 타이머를 실행하기 위해서 기다려야 하는 시간을 반환한다
   if (diff > INT_MAX)
     diff = INT_MAX;
 
