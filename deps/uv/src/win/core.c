@@ -669,6 +669,7 @@ int uv_run(uv_loop_t *loop, uv_run_mode mode) {
   if (loop->stop_flag != 0)
     loop->stop_flag = 0;
 
+  printf("Event Loop Finish\n");
   return r;
 }
 
