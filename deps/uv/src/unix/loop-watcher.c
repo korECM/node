@@ -50,12 +50,20 @@
     QUEUE queue;                                                              \
     QUEUE* q;                                                                 \
     QUEUE_MOVE(&loop->name##_handles, &queue);                                \
+    if (UV_##type == UV_CHECK) {                                              \
+      printf("  RUN CHECK PHASE CALLBACK START\n");                           \
+      printf("====================\n");                                       \
+    }                                                                         \
     while (!QUEUE_EMPTY(&queue)) {                                            \
       q = QUEUE_HEAD(&queue);                                                 \
       h = QUEUE_DATA(q, uv_##name##_t, queue);                                \
       QUEUE_REMOVE(q);                                                        \
       QUEUE_INSERT_TAIL(&loop->name##_handles, q);                            \
       h->name##_cb(h);                                                        \
+    }                                                                         \
+    if (UV_##type == UV_CHECK) {                                              \
+      printf("====================\n");                                       \
+      printf("  RUN CHECK PHASE CALLBACK END\n");                             \
     }                                                                         \
   }                                                                           \
                                                                               \

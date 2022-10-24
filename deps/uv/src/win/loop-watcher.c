@@ -109,11 +109,19 @@ void uv_loop_watcher_endgame(uv_loop_t* loop, uv_handle_t* handle) {
                                                                               \
     (loop)->next_##name##_handle = (loop)->name##_handles;                    \
                                                                               \
+    if (UV_##NAME == UV_CHECK) {                                              \
+      printf("  RUN CHECK PHASE CALLBACK START\n");                           \
+      printf("====================\n");                                       \
+    }                                                                         \
     while ((loop)->next_##name##_handle != NULL) {                            \
       handle = (loop)->next_##name##_handle;                                  \
       (loop)->next_##name##_handle = handle->name##_next;                     \
                                                                               \
       handle->name##_cb(handle);                                              \
+    }                                                                         \
+    if (UV_##NAME == UV_CHECK) {                                              \
+      printf("  RUN CHECK PHASE CALLBACK START\n");                           \
+      printf("====================\n");                                       \
     }                                                                         \
   }
 
